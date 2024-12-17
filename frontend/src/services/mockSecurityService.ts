@@ -11,7 +11,8 @@ import {
   ThreatMetrics,
   IPSMetrics,
   VPNMetrics,
-  SystemPerformance
+  SystemPerformance,
+  LogEntry
 } from '../types/security';
 
 const generateRandomTimestamps = (count: number, hoursBack: number = 24) => {
@@ -22,6 +23,35 @@ const generateRandomTimestamps = (count: number, hoursBack: number = 24) => {
     timestamps.push(timestamp.toISOString());
   }
   return timestamps.sort();
+};
+
+const generateMockLogs = (count: number): LogEntry[] => {
+  const categories = ['Firewall', 'IPS', 'Anti-Virus', 'VPN', 'SSL-VPN', 'Content Filter'];
+  const sources = ['192.168.1.100', '10.0.0.50', '172.16.0.25', 'external.domain.com', '8.8.8.8'];
+  const severities: ('high' | 'medium' | 'low')[] = ['high', 'medium', 'low'];
+  
+  const messages = [
+    'Connection attempt blocked by security policy',
+    'Potential port scan detected',
+    'SSL certificate validation failed',
+    'Multiple failed login attempts detected',
+    'Malware signature detected in file transfer',
+    'DNS request blocked by content filter',
+    'VPN tunnel establishment failed',
+    'Suspicious outbound connection attempt',
+    'Bandwidth limit exceeded',
+    'Application control blocked unauthorized access'
+  ];
+
+  return Array.from({ length: count }, (_, i) => ({
+    id: `log-${i + 1}`,
+    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(),
+    category: categories[Math.floor(Math.random() * categories.length)],
+    severity: severities[Math.floor(Math.random() * severities.length)],
+    source: sources[Math.floor(Math.random() * sources.length)],
+    message: messages[Math.floor(Math.random() * messages.length)],
+    isInnocuous: Math.random() > 0.7
+  }));
 };
 
 export const mockSecurityService = {
@@ -322,6 +352,22 @@ export const mockSecurityService = {
           errors_out: 0
         }
       ]
+    };
+  },
+
+  getLogs: async () => {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return generateMockLogs(50);
+  },
+
+  getSecurityMetrics: async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return {
+      totalThreats: 1250,
+      blockedAttacks: 987,
+      activeConnections: 156,
+      bandwidthUsage: 78.5
     };
   }
 }; 

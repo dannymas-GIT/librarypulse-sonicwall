@@ -190,4 +190,66 @@ export interface SystemPerformance {
     errors_in: number;
     errors_out: number;
   }[];
+}
+
+export interface LogEntry {
+  id: string;
+  timestamp: string;
+  severity: 'high' | 'medium' | 'low';
+  category: string;
+  message: string;
+  source: string;
+  isInnocuous?: boolean;
+  aiAnalysis?: string;
+}
+
+export interface SecurityMetrics {
+  totalThreats: number;
+  blockedAttacks: number;
+  activeConnections: number;
+  bandwidthUsage: number;
+}
+
+export interface LogFilter {
+  severity?: 'high' | 'medium' | 'low';
+  category?: string;
+  source?: string;
+  searchTerm?: string;
+  showInnocuous?: boolean;
+}
+
+export interface IPSMetrics {
+  totalDetections: number;
+  blockedAttacks: number;
+  topAttackers: Array<{ ip: string; count: number }>;
+  detectionsByType: Array<{ type: string; count: number }>;
+}
+
+export interface VPNMetrics {
+  activeSessions: number;
+  totalBandwidth: number;
+  sessionsByType: Array<{ type: string; count: number }>;
+  topUsers: Array<{ user: string; bandwidth: number }>;
+}
+
+export interface SystemPerformance {
+  cpu_usage: number;
+  memory_usage: {
+    total_mb: number;
+    used_mb: number;
+    free_mb: number;
+  };
+  network_throughput: Array<{
+    timestamp: string;
+    incoming_mbps: number;
+    outgoing_mbps: number;
+  }>;
+  interface_stats: Array<{
+    name: string;
+    status: string;
+    packets_in: number;
+    packets_out: number;
+    errors_in: number;
+    errors_out: number;
+  }>;
 } 

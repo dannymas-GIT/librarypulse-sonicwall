@@ -1,164 +1,299 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-import { mockSecurityService } from '../../services/mockSecurityService';
-import { LogFilter, SecurityLog } from '../../types/security';
+import { Search, AlertCircle, CheckCircle2, Brain, Loader2, Filter, X } from 'lucide-react';
 
-const priorityColors = {
-  Alert: 'text-red-600 bg-red-50',
-  Notice: 'text-yellow-600 bg-yellow-50',
-  Information: 'text-blue-600 bg-blue-50'
-};
+interface LogEntry {
+  id: string;
+  timestamp: string;
+  severity: 'high' | 'medium' | 'low';
+  category: string;
+  message: string;
+  source: string;
+  isInnocuous?: boolean;
+  aiAnalysis?: string;
+}
 
-export const SecurityLogTable: React.FC = () => {
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
-  const [filters, setFilters] = useState<LogFilter>({});
+interface SecurityLogTableProps {
+  logs: LogEntry[];
+  onUpdateLog: (logId: string, updates: Partial<LogEntry>) => void;
+  onAnalyzeLogs: (logs: LogEntry[]) => Promise<void>;
+}
+
+export const SecurityLogTable: React.FC<SecurityLogTableProps> = ({
+  logs,
+  onUpdateLog,
+  onAnalyzeLogs,
+}) => {
+  const [selectedLogs, setSelectedLogs] = useState<Set<string>>(new Set());
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['securityLogs', page, pageSize, filters],
-    queryFn: () => mockSecurityService.getLogs(page, pageSize, filters),
-    keepPreviousData: true
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    severity: '',
+    category: '',
+    timeRange: '24h'
   });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFilters(prev => ({ ...prev, searchTerm }));
-    setPage(1);
+  const uniqueCategories = Array.from(new Set(logs.map(log => log.category))).sort();
+
+  const getTimeRangeStart = (range: string) => {
+    const now = new Date();
+    switch (range) {
+      case '1h':
+        return new Date(now.getTime() - 3600000);
+      case '24h':
+        return new Date(now.getTime() - 86400000);
+      case '7d':
+        return new Date(now.getTime() - 604800000);
+      case '30d':
+        return new Date(now.getTime() - 2592000000);
+      default:
+        return new Date(0);
+    }
   };
 
-  const handleFilterChange = (key: keyof LogFilter, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value || undefined }));
-    setPage(1);
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = !searchTerm || 
+      log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.source.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesSeverity = !filters.severity || log.severity === filters.severity;
+    const matchesCategory = !filters.category || log.category === filters.category;
+    const matchesTime = new Date(log.timestamp) >= getTimeRangeStart(filters.timeRange);
+
+    return matchesSearch && matchesSeverity && matchesCategory && matchesTime;
+  });
+
+  const handleSelectLog = (logId: string) => {
+    const newSelected = new Set(selectedLogs);
+    if (newSelected.has(logId)) {
+      newSelected.delete(logId);
+    } else {
+      newSelected.add(logId);
+    }
+    setSelectedLogs(newSelected);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-900" />
-      </div>
-    );
-  }
+  const handleAnalyzeSelected = async () => {
+    setIsAnalyzing(true);
+    try {
+      const selectedLogEntries = logs.filter(log => selectedLogs.has(log.id));
+      await onAnalyzeLogs(selectedLogEntries);
+    } finally {
+      setIsAnalyzing(false);
+      setSelectedLogs(new Set());
+    }
+  };
 
-  if (isError) {
-    return (
-      <div className="text-red-500 p-4">
-        Error loading security logs
-      </div>
-    );
-  }
+  const handleClearFilters = () => {
+    setFilters({
+      severity: '',
+      category: '',
+      timeRange: '24h'
+    });
+    setSearchTerm('');
+  };
 
-  const totalPages = Math.ceil((data?.total || 0) / pageSize);
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'high':
+        return 'text-red-600 bg-red-50';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'low':
+        return 'text-green-600 bg-green-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
-      <div className="p-4 border-b">
-        <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Search logs..."
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="p-4 border-b border-gray-200 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search logs..."
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
             <button
-              type="submit"
-              className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center space-x-2 px-3 py-2 border rounded-md hover:bg-gray-50 ${
+                showFilters ? 'border-blue-500 text-blue-600' : 'border-gray-300 text-gray-600'
+              }`}
             >
-              <Search className="w-5 h-5" />
+              <Filter className="h-4 w-4" />
+              <span>Filters</span>
             </button>
-          </form>
-
-          <div className="flex gap-4">
-            <select
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              onChange={(e) => handleFilterChange('priority', e.target.value)}
-              value={filters.priority || ''}
-            >
-              <option value="">All Priorities</option>
-              <option value="Alert">Alert</option>
-              <option value="Notice">Notice</option>
-              <option value="Information">Information</option>
-            </select>
-
-            <select
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              onChange={(e) => handleFilterChange('category', e.target.value)}
-              value={filters.category || ''}
-            >
-              <option value="">All Categories</option>
-              <option value="System">System</option>
-              <option value="Attack">Attack</option>
-              <option value="Network">Network</option>
-              <option value="Policy">Policy</option>
-            </select>
+            {(showFilters || searchTerm || filters.severity || filters.category) && (
+              <button
+                onClick={handleClearFilters}
+                className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900"
+              >
+                <X className="h-4 w-4" />
+                <span>Clear</span>
+              </button>
+            )}
+          </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span className="flex items-center">
+              <div className="h-2 w-2 rounded-full bg-red-500 mr-1" /> High
+            </span>
+            <span className="flex items-center">
+              <div className="h-2 w-2 rounded-full bg-yellow-500 mr-1" /> Medium
+            </span>
+            <span className="flex items-center">
+              <div className="h-2 w-2 rounded-full bg-green-500 mr-1" /> Low
+            </span>
           </div>
         </div>
+
+        {showFilters && (
+          <div className="flex items-center space-x-4 pt-2">
+            <select
+              value={filters.severity}
+              onChange={(e) => setFilters(f => ({ ...f, severity: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Severities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+
+            <select
+              value={filters.category}
+              onChange={(e) => setFilters(f => ({ ...f, category: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Categories</option>
+              {uniqueCategories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.timeRange}
+              onChange={(e) => setFilters(f => ({ ...f, timeRange: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="1h">Last Hour</option>
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="all">All Time</option>
+            </select>
+
+            {selectedLogs.size > 0 && (
+              <button
+                onClick={handleAnalyzeSelected}
+                disabled={isAnalyzing}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {isAnalyzing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Brain className="h-4 w-4" />
+                )}
+                <span>Analyze Selected ({selectedLogs.size})</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Select
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Timestamp
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Severity
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Category
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Message
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Source
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data?.logs.map((log) => (
-              <tr key={log.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {new Date(log.time).toLocaleString()}
+            {filteredLogs.map((log) => (
+              <tr key={log.id} className={log.isInnocuous ? 'bg-gray-50' : ''}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={selectedLogs.has(log.id)}
+                    onChange={() => handleSelectLog(log.id)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(log.timestamp).toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs rounded-full ${priorityColors[log.priority]}`}>
-                    {log.priority}
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getSeverityColor(log.severity)}`}>
+                    {log.severity}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {log.category}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {log.src_ip}:{log.src_port}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {log.dst_ip}:{log.dst_port}
-                </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
-                  {log.message}
+                  <div className="max-w-lg">
+                    {log.message}
+                    {log.aiAnalysis && (
+                      <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                        <div className="font-medium mb-1">AI Analysis:</div>
+                        {log.aiAnalysis}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {log.source}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => onUpdateLog(log.id, { isInnocuous: !log.isInnocuous })}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded ${
+                      log.isInnocuous
+                        ? 'text-green-700 bg-green-50 hover:bg-green-100'
+                        : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    {log.isInnocuous ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span className="text-xs">
+                      {log.isInnocuous ? 'Innocuous' : 'Mark Safe'}
+                    </span>
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div className="px-4 py-3 border-t flex items-center justify-between">
-        <div className="text-sm text-gray-700">
-          Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, data?.total || 0)} of {data?.total} results
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="p-2 border rounded hover:bg-gray-50 disabled:opacity-50"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="p-2 border rounded hover:bg-gray-50 disabled:opacity-50"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
       </div>
     </div>
   );
