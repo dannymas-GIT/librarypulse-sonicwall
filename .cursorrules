@@ -1,0 +1,83 @@
+# Project-Specific Rules
+
+# Backend Integration Rules
+
+1. Never modify working backend code
+2. Always adapt frontend to match backend contract
+3. Reference Swagger/OpenAPI documentation for endpoints
+4. Create TypeScript interfaces matching exact backend responses
+5. Handle all error cases defined in the API contract
+
+## Naming Conventions
+- Components: PascalCase (e.g., SecurityMetrics, VPNTunnelDialog)
+- Hooks: camelCase with 'use' prefix (e.g., useAuthState)
+- API routes: kebab-case (e.g., /api/access-rules)
+- Database tables: snake_case (e.g., access_rules)
+- Type definitions: PascalCase (e.g., AccessRule, NATPolicy)
+
+## Directory Structure
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── common/      # Shared components like DataSourceIndicator
+│   │   ├── layout/      # Layout components
+│   │   ├── security/    # Security-related components
+│   │   └── dashboard/   # Dashboard-related components
+│   ├── pages/           # Page components
+│   ├── services/        # API services and data fetching
+│   ├── types/           # TypeScript type definitions
+│   └── utils/           # Utility functions
+```
+
+## Component Requirements
+- All components must use TypeScript
+- Use Material-UI components for UI elements
+- Implement proper error handling with error boundaries
+- Use React Query for server state management
+- Follow atomic design principles
+- Components should be self-contained and reusable
+
+## API Integration
+- Use React Query for data fetching
+- Implement proper error handling
+- Use TypeScript types for request/response data
+- Follow RESTful conventions
+- Include proper loading states
+- Implement optimistic updates where appropriate
+
+## Styling Guidelines
+- Use Tailwind CSS for styling
+- Follow utility-first CSS principles
+- Use Material-UI theme for consistent design
+- Maintain responsive design
+- Use CSS variables for theme values
+
+## State Management
+- Use React Query for server state
+- Use React Context for global UI state
+- Use local state for component-specific state
+- Implement proper loading states
+- Handle error states consistently
+
+## Testing Requirements
+- Unit tests for utility functions
+- Component tests for complex components
+- Integration tests for API interactions
+- E2E tests for critical user flows
+- Test coverage requirements: 80%
+
+## Development Workflow
+- Branch naming: feature/*, bugfix/*, hotfix/*
+- Commit message format: type(scope): description
+  Types: feat, fix, docs, style, refactor, test, chore
+- Code review required for all PRs
+- Linting must pass before merge
+- Tests must pass before merge
+
+## Documentation
+- README.md in each major directory
+- JSDoc comments for functions and components
+- API documentation with Swagger
+- Type definitions must be documented
+- Update documentation with code changes
