@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, AlertCircle, CheckCircle2, Brain, Loader2, Filter, X } from 'lucide-react';
+import { ChatAssistant } from './ChatAssistant';
 
 interface LogEntry {
   id: string;
@@ -32,6 +33,7 @@ export const SecurityLogTable: React.FC<SecurityLogTableProps> = ({
     category: '',
     timeRange: '24h'
   });
+  const [isChatVisible, setChatVisible] = useState(false);
 
   const uniqueCategories = Array.from(new Set(logs.map(log => log.category))).sort();
 
@@ -72,6 +74,7 @@ export const SecurityLogTable: React.FC<SecurityLogTableProps> = ({
       newSelected.add(logId);
     }
     setSelectedLogs(newSelected);
+    console.log('Selected Logs:', Array.from(newSelected));
   };
 
   const handleAnalyzeSelected = async () => {
@@ -105,6 +108,15 @@ export const SecurityLogTable: React.FC<SecurityLogTableProps> = ({
       default:
         return 'text-gray-600 bg-gray-50';
     }
+  };
+
+  const openChat = () => {
+    setChatVisible(true);
+    console.log('Chat opened with selected logs:', Array.from(selectedLogs));
+  };
+
+  const closeChat = () => {
+    setChatVisible(false);
   };
 
   return (
@@ -141,16 +153,29 @@ export const SecurityLogTable: React.FC<SecurityLogTableProps> = ({
               </button>
             )}
           </div>
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <span className="flex items-center">
-              <div className="h-2 w-2 rounded-full bg-red-500 mr-1" /> High
-            </span>
-            <span className="flex items-center">
-              <div className="h-2 w-2 rounded-full bg-yellow-500 mr-1" /> Medium
-            </span>
-            <span className="flex items-center">
-              <div className="h-2 w-2 rounded-full bg-green-500 mr-1" /> Low
-            </span>
+          <div className="flex items-center space-x-4">
+            {selectedLogs.size > 0 && (
+              <button
+                onClick={() => {
+                  console.log('Button should be visible');
+                  openChat();
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Discuss Selected Logs
+              </button>
+            )}
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-red-500 mr-1" /> High
+              </span>
+              <span className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-yellow-500 mr-1" /> Medium
+              </span>
+              <span className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-green-500 mr-1" /> Low
+              </span>
+            </div>
           </div>
         </div>
 
@@ -189,21 +214,6 @@ export const SecurityLogTable: React.FC<SecurityLogTableProps> = ({
               <option value="30d">Last 30 Days</option>
               <option value="all">All Time</option>
             </select>
-
-            {selectedLogs.size > 0 && (
-              <button
-                onClick={handleAnalyzeSelected}
-                disabled={isAnalyzing}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {isAnalyzing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Brain className="h-4 w-4" />
-                )}
-                <span>Analyze Selected ({selectedLogs.size})</span>
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -295,6 +305,15 @@ export const SecurityLogTable: React.FC<SecurityLogTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {isChatVisible && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <button onClick={closeChat} className="text-red-500">Close</button>
+            <ChatAssistant selectedLogs={Array.from(selectedLogs)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }; 
