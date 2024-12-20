@@ -1,229 +1,186 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Line } from 'react-chartjs-2';
-import {
-  Shield,
-  AlertTriangle,
-  Activity,
-  Globe,
-  Zap,
-  Target,
-  BarChart2,
-  Lock
-} from 'lucide-react';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { mockSecurityService } from '../../services/mockSecurityService';
-import { ThreatMap } from '../../components/security/ThreatMap';
-import { ThreatMetricsPanel } from '../../components/security/ThreatMetricsPanel';
+import { Shield, AlertTriangle, Activity } from 'lucide-react';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export const ThreatPrevention: React.FC = () => {
-  const { data: threatMetrics, isLoading: isLoadingThreats } = useQuery({
+  const { data: threatMetrics, isLoading } = useQuery({
     queryKey: ['threatMetrics'],
     queryFn: mockSecurityService.getThreatMetrics
   });
 
-  const { data: ipsMetrics, isLoading: isLoadingIPS } = useQuery({
-    queryKey: ['ipsMetrics'],
-    queryFn: mockSecurityService.getIPSMetrics
-  });
-
-  const isLoading = isLoadingThreats || isLoadingIPS;
-
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900" />
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
+  const threatTypeData = threatMetrics ? Object.entries(threatMetrics.threats_by_type).map(([name, value]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    value
+  })) : [];
+
+  const severityData = threatMetrics ? Object.entries(threatMetrics.threats_by_severity).map(([name, value]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    value
+  })) : [];
+
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Threat Prevention</h1>
-        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg">
-          <Activity className="w-5 h-5" />
-          <span className="font-medium">Active Protection</span>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Threat Prevention</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <Shield className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Total Threats Blocked</h3>
+              <p className="text-2xl font-semibold">
+                {threatMetrics?.total_threats_blocked.toLocaleString() || '-'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-100 rounded-lg">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Critical Threats</h3>
+              <p className="text-2xl font-semibold text-red-600">
+                {threatMetrics?.threats_by_severity.critical.toLocaleString() || '-'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-yellow-100 rounded-lg">
+              <Activity className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Active Alerts</h3>
+              <p className="text-2xl font-semibold text-yellow-600">
+                {threatMetrics?.trend_data[threatMetrics.trend_data.length - 1]?.count.toLocaleString() || '-'}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-red-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-5 h-5 text-red-600" />
-            <span className="font-medium text-red-900">Total Threats</span>
-          </div>
-          <p className="text-2xl font-bold text-red-700">
-            {threatMetrics?.total_threats_blocked.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="bg-orange-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
-            <span className="font-medium text-orange-900">Critical Threats</span>
-          </div>
-          <p className="text-2xl font-bold text-orange-700">
-            {threatMetrics?.threats_by_severity.critical.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Globe className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-blue-900">Source Countries</span>
-          </div>
-          <p className="text-2xl font-bold text-blue-700">
-            {threatMetrics?.geographic_data.length}
-          </p>
-        </div>
-
-        <div className="bg-purple-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Zap className="w-5 h-5 text-purple-600" />
-            <span className="font-medium text-purple-900">Response Time</span>
-          </div>
-          <p className="text-2xl font-bold text-purple-700">
-            {ipsMetrics?.performance_impact.latency_ms.toFixed(1)} ms
-          </p>
-        </div>
-      </div>
-
-      <ThreatMetricsPanel data={threatMetrics} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ThreatMap data={threatMetrics.geographic_data} />
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Threat Trend</h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={threatMetrics?.trend_data}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="timestamp"
+                  tickFormatter={(value) => new Date(value).toLocaleTimeString()}
+                />
+                <YAxis />
+                <Tooltip
+                  labelFormatter={(value) => new Date(value).toLocaleString()}
+                  formatter={(value: number) => [value.toLocaleString(), 'Threats']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#0088FE"
+                  fill="#0088FE"
+                  fillOpacity={0.1}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-4">Attack Categories</h3>
-          <div className="space-y-4">
-            {ipsMetrics?.attacks_by_category.map(({ category, count, severity }) => (
-              <div key={category} className="flex items-center">
-                <div className="w-40 font-medium">{category}</div>
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${
-                        severity === 'Critical'
-                          ? 'bg-red-500'
-                          : severity === 'High'
-                          ? 'bg-orange-500'
-                          : 'bg-yellow-500'
-                      }`}
-                      style={{
-                        width: `${(count / ipsMetrics.total_attacks_blocked) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="w-32 text-right">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    severity === 'Critical'
-                      ? 'bg-red-100 text-red-800'
-                      : severity === 'High'
-                      ? 'bg-orange-100 text-orange-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {severity}
-                  </span>
-                </div>
-                <div className="w-24 text-right text-sm text-gray-600">
-                  {count.toLocaleString()}
-                </div>
-              </div>
-            ))}
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Geographic Distribution</h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={threatMetrics?.geographic_data}
+                margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="country"
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis />
+                <Tooltip formatter={(value: number) => value.toLocaleString()} />
+                <Bar dataKey="count" fill="#0088FE">
+                  {threatMetrics?.geographic_data.map((entry, index) => (
+                    <Cell key={entry.country} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-4">Protection Status</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-green-600" />
-                <span>IPS</span>
-              </div>
-              <span className="text-green-600 font-medium">Active</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Lock className="w-5 h-5 text-green-600" />
-                <span>Anti-Virus</span>
-              </div>
-              <span className="text-green-600 font-medium">Active</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-green-600" />
-                <span>Anti-Spyware</span>
-              </div>
-              <span className="text-green-600 font-medium">Active</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart2 className="w-5 h-5 text-green-600" />
-                <span>Botnet Filter</span>
-              </div>
-              <span className="text-green-600 font-medium">Active</span>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Threats by Type</h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={threatTypeData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {threatTypeData.map((entry, index) => (
+                    <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => value.toLocaleString()} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-4">System Impact</h3>
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>CPU Usage</span>
-                <span>15%</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full">
-                <div className="h-full w-[15%] bg-green-500 rounded-full"></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Memory Usage</span>
-                <span>25%</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full">
-                <div className="h-full w-[25%] bg-green-500 rounded-full"></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Network Impact</span>
-                <span>8%</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full">
-                <div className="h-full w-[8%] bg-green-500 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-4">Signature Coverage</h3>
-          <div className="space-y-6">
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Total Signatures</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {ipsMetrics?.signature_coverage.total_signatures.toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Active Signatures</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {ipsMetrics?.signature_coverage.active_signatures.toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Custom Signatures</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {ipsMetrics?.signature_coverage.custom_signatures.toLocaleString()}
-              </div>
-            </div>
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Threats by Severity</h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={severityData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {severityData.map((entry, index) => (
+                    <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => value.toLocaleString()} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

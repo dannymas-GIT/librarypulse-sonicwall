@@ -5,20 +5,6 @@ export interface SecurityLog {
   category: string;
   message: string;
   source: string;
-  isInnocuous?: boolean;
-  aiAnalysis?: string;
-  time?: string;
-  priority?: string;
-  src_int_?: string | null;
-  dst_int_?: string | null;
-  src_ip?: string;
-  src_port?: number;
-  dst_ip?: string;
-  dst_port?: number;
-  ip_protocol?: string;
-  user_name?: string | null;
-  application?: string | null;
-  notes?: string;
 }
 
 export interface LogsResponse {
@@ -50,14 +36,14 @@ export interface ThreatMetrics {
 
 export interface IPSMetrics {
   total_attacks_blocked: number;
-  totalDetections: number;
-  blockedAttacks: number;
+  totalDetections?: number;
+  blockedAttacks?: number;
   attacks_by_category: Array<{
     category: string;
     count: number;
     severity: string;
   }>;
-  topAttackers: Array<{
+  topAttackers?: Array<{
     ip: string;
     count: number;
   }>;
@@ -66,7 +52,7 @@ export interface IPSMetrics {
     port: number;
     count: number;
   }>;
-  detectionsByType: Array<{
+  detectionsByType?: Array<{
     type: string;
     count: number;
   }>;
