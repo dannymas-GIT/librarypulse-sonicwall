@@ -1,0 +1,57 @@
+# IMPORTANT: This is a template configuration file.
+# Copy this to docker-compose.yml and adjust settings as needed.
+# Common Issues:
+# 1. Port Mapping: Do not expose frontend port as it's accessed through the main Nginx reverse proxy
+# 2. Network Configuration: Must be on the same network as the main Nginx reverse proxy
+# 3. Environment Variables: Ensure proper API URLs and environment settings
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    # NOTE: Do not expose ports - the service is accessed through the main Nginx reverse proxy
+    environment:
+      - NODE_ENV=production
+      # Update API URL to match your domain and path
+      - VITE_API_URL=https://your-domain.com/app/sonicwall/api
+    networks:
+      # Must be on the same network as the main Nginx reverse proxy
+      - app-network
+      - default
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"  # API port - adjust if needed
+    volumes:
+      - ./backend:/app  # Development volume - remove in production
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/mydatabase  # Update credentials
+    networks:
+      - app-network
+      - default
+
+  db:
+    image: postgres:13
+    environment:
+      # Update these with secure credentials
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - default
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    # This network must match the main docker-compose network
+    external: true
+    name: docker-apps_app-network
+  default:
