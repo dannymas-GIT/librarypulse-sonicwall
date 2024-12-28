@@ -1,132 +1,64 @@
-# Python
+# Environment and Configuration Files
+.env
+.env.*
+!.env.example
+*.conf
+!*.template.conf
+docker-compose.yml
+!docker-compose.template.yml
+
+# Dependencies
+node_modules/
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual Environment
-.env
-.venv
-env/
 venv/
-ENV/
-env.bak/
-venv.bak/
+.venv/
+dist/
+build/
 
-# IDE
-.idea/
+# IDE and Editor Files
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
 
-# Testing
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-htmlcov/
-
-# Logs
+# Logs and Databases
 *.log
 logs/
-log/
-
-# Database
 *.sqlite3
-*.sqlite3-journal
 *.db
 
-# Environment Variables and Secrets
-.env
-.env.*
-!.env.example
+# Certificates and Keys
 *.pem
 *.key
 *.crt
-secrets/
-credentials/
+*.cert
+*.der
 
-# Project specific
-backend/.env
-backend/logs/
-backend/db/
-backend/static/
-backend/media/
-backend/uploads/
-
-# Temporary files
-*.bak
-*.tmp
-*.temp
-.DS_Store
-Thumbs.db
-
-# Dependencies
-node_modules/
-jspm_packages/
-bower_components/
-
-# Distribution
-dist/
-build/
-*.pyc
-
-# Documentation
-docs/_build/
-site/
-
-# Cache
+# Build and Cache
 .cache/
 .npm/
 .eslintcache
-.stylelintcache
+.pytest_cache/
+coverage/
+.coverage
+htmlcov/
 
-# Local development
-docker-compose.override.yml
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+
+# Development Files
 *.local
 local_settings.py
+development.env
 
-# SSL/TLS Certificates
-*.pem
-*.key
-*.crt
-*.cer
-*.der
-*.priv
-
-# API keys and secrets
-.env.local
-.env.*.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.secret
-*_key
-*_token
+# Docker
+.docker/
+docker-compose.override.yml
