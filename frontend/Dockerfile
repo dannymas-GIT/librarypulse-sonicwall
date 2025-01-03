@@ -1,23 +1,35 @@
-# Use an official Node.js runtime as a parent image
-FROM node:16
+# Build stage
+FROM node:20-alpine as build
 
-# Set the working directory in the container
 WORKDIR /app
-
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Copy the rest of the application code
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Production stage
+FROM nginx:alpine
 
-# Start the application
-CMD ["npm", "start"] 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create the directory structure
+RUN mkdir -p /usr/share/nginx/html/app/sonicwall
+
+# Copy built assets from build stage
+COPY --from=build /app/dist /usr/share/nginx/html/app/sonicwall
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Create cache directories and set permissions
+RUN mkdir -p /var/cache/nginx && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chmod -R 755 /var/cache/nginx
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"] 

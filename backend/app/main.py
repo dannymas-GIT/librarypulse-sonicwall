@@ -6,9 +6,10 @@ app = FastAPI(
     title="SonicWall Management API",
     description="API for managing SonicWall security appliances",
     version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    root_path="/api/sonicwall"
 )
 
 # Configure CORS
@@ -20,4 +21,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api/v1") 
+app.include_router(api_router, prefix="/v1") 

@@ -5,32 +5,76 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
+    container_name: sonicwall-frontend
+    restart: unless-stopped
     environment:
       - NODE_ENV=production
+      - VITE_API_URL=/app/sonicwall/api
+    networks:
+      - app-network
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
+    container_name: sonicwall-backend
+    restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+      - DATABASE_URL=postgresql://user:${DB_PASSWORD}@sonicwall-db:5432/sonicwall
+      - SECRET_KEY=${SECRET_KEY}
+      - CORS_ORIGINS=http://localhost:80
+    networks:
+      - app-network
+    depends_on:
+      - sonicwall-db
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
 
-  db:
-    image: postgres:13
+  sonicwall-db:
+    image: postgres:15-alpine
+    container_name: sonicwall-db
     environment:
       POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydatabase
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: sonicwall
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - sonicwall_postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+
+networks:
+  app-network:
+    external: true
+    name: docker-apps_app-network
 
 volumes:
-  db_data: 
+  sonicwall_postgres_data: 
